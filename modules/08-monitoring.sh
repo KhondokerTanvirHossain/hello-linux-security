@@ -16,16 +16,19 @@ log_success "AIDE installed."
 # --------------------------------------------------------------------------
 # Step 2: Initialize AIDE database
 # --------------------------------------------------------------------------
-log_info "Initializing AIDE database (this may take a minute or two)..."
-aide --init
-log_success "AIDE database initialized."
+if [[ -f /var/lib/aide/aide.db.gz ]]; then
+    log_warn "AIDE database already exists — skipping re-initialization."
+    log_info "To re-initialize: aide --init && mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz"
+else
+    log_info "Initializing AIDE database (this may take a minute or two)..."
+    aide --init
+    log_success "AIDE database initialized."
 
-# --------------------------------------------------------------------------
-# Step 3: Move the new database into place
-# --------------------------------------------------------------------------
-log_info "Activating AIDE database..."
-mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
-log_success "AIDE database is active at /var/lib/aide/aide.db.gz."
+    # Move the new database into place
+    log_info "Activating AIDE database..."
+    mv /var/lib/aide/aide.db.new.gz /var/lib/aide/aide.db.gz
+    log_success "AIDE database is active at /var/lib/aide/aide.db.gz."
+fi
 
 # --------------------------------------------------------------------------
 # Step 4: Add daily AIDE cron job

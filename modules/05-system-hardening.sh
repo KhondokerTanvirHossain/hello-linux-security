@@ -60,8 +60,8 @@ log_success "Unused services disabled (postfix, rpcbind, cups)"
 # =========================================================================
 log_info "Restricting cron and at access to '$NEW_USER' ..."
 
-echo "$NEW_USER" > /etc/cron.allow
-echo "$NEW_USER" > /etc/at.allow
+printf '%s\n' root "$NEW_USER" > /etc/cron.allow
+printf '%s\n' root "$NEW_USER" > /etc/at.allow
 
 log_success "cron.allow and at.allow configured for '$NEW_USER'"
 

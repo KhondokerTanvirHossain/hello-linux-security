@@ -21,7 +21,8 @@ Port $SSH_PORT
 PermitRootLogin no
 PasswordAuthentication yes
 PubkeyAuthentication yes
-AuthenticationMethods publickey keyboard-interactive:pam
+AuthenticationMethods publickey,keyboard-interactive:pam
+KbdInteractiveAuthentication yes
 ChallengeResponseAuthentication yes
 MaxAuthTries 3
 ClientAliveInterval 300
@@ -51,9 +52,11 @@ fi
 # Try to add the port; if it already exists, modify it instead
 if semanage port -a -t ssh_port_t -p tcp "$SSH_PORT" 2>/dev/null; then
     log_success "SELinux: added SSH port $SSH_PORT"
-else
-    semanage port -m -t ssh_port_t -p tcp "$SSH_PORT"
+elif semanage port -m -t ssh_port_t -p tcp "$SSH_PORT" 2>/dev/null; then
     log_success "SELinux: modified existing entry for SSH port $SSH_PORT"
+else
+    log_error "Failed to configure SELinux for SSH port $SSH_PORT"
+    exit 1
 fi
 
 # =========================================================================

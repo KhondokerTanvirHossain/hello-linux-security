@@ -26,7 +26,6 @@ maxretry = 3
 [sshd]
 enabled = true
 port = $SSH_PORT
-logpath = /var/log/secure
 maxretry = 3
 bantime = 86400
 EOF

@@ -42,10 +42,20 @@ section_header "Configuration"
 # --- Username ---
 NEW_USER=$(prompt_input "Enter username" "admin")
 
+if [[ ! "$NEW_USER" =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; then
+    log_error "Invalid username. Must start with a lowercase letter/underscore, contain only [a-z0-9_-], max 32 chars."
+    exit 1
+fi
+
 # --- Password with confirmation ---
 while true; do
     NEW_USER_PASS=$(prompt_password "Enter password for $NEW_USER")
     NEW_USER_PASS_CONFIRM=$(prompt_password "Confirm password for $NEW_USER")
+
+    if [[ -z "$NEW_USER_PASS" ]]; then
+        log_error "Password cannot be empty. Please try again."
+        continue
+    fi
 
     if [[ "$NEW_USER_PASS" == "$NEW_USER_PASS_CONFIRM" ]]; then
         break
@@ -88,6 +98,8 @@ fi
 
 # Export variables for use by modules
 export NEW_USER NEW_USER_PASS SSH_PORT BACKUP_KEY
+
+# Note: NEW_USER_PASS is unset in 01-user-setup.sh after chpasswd
 
 # ==========================================================================
 # Phase 2: Execute Modules

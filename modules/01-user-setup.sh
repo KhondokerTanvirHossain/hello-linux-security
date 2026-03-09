@@ -18,7 +18,8 @@ fi
 # --------------------------------------------------------------------------
 log_info "Setting password for '$NEW_USER'..."
 echo "$NEW_USER:$NEW_USER_PASS" | chpasswd
-log_success "Password set for '$NEW_USER'."
+unset NEW_USER_PASS
+log_success "Password set for '$NEW_USER' (password cleared from environment)."
 
 # --------------------------------------------------------------------------
 # Step 3: Add user to the wheel group (sudo access)
