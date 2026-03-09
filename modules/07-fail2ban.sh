@@ -43,5 +43,17 @@ log_success "fail2ban is enabled and running."
 # Step 4: Verify sshd jail is active
 # --------------------------------------------------------------------------
 log_info "Verifying fail2ban sshd jail status..."
-fail2ban-client status sshd
-log_success "fail2ban brute-force protection is active for SSH on port $SSH_PORT."
+
+# fail2ban needs a moment to create its socket after starting
+for i in 1 2 3 4 5; do
+    if fail2ban-client status sshd &>/dev/null; then
+        fail2ban-client status sshd
+        log_success "fail2ban brute-force protection is active for SSH on port $SSH_PORT."
+        break
+    fi
+    if [[ $i -eq 5 ]]; then
+        log_warn "fail2ban socket not ready after 5s — service started but verification skipped."
+        break
+    fi
+    sleep 1
+done
