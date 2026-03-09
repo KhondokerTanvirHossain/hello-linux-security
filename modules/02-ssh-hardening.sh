@@ -28,7 +28,7 @@ Port $SSH_PORT
 PermitRootLogin no
 PasswordAuthentication yes
 PubkeyAuthentication yes
-AuthenticationMethods publickey,keyboard-interactive:pam
+AuthenticationMethods publickey keyboard-interactive:pam
 KbdInteractiveAuthentication yes
 ChallengeResponseAuthentication yes
 MaxAuthTries 3
