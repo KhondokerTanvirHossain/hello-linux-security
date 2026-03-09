@@ -32,13 +32,17 @@ log_info "Checking SELinux status ..."
 
 if command -v getenforce &>/dev/null; then
     SELINUX_STATUS=$(getenforce)
-    if [[ "$SELINUX_STATUS" != "Enforcing" ]]; then
-        log_warn "SELinux is '$SELINUX_STATUS' — setting to Enforcing ..."
+    if [[ "$SELINUX_STATUS" == "Enforcing" ]]; then
+        log_success "SELinux is already Enforcing"
+    elif [[ "$SELINUX_STATUS" == "Permissive" ]]; then
+        log_warn "SELinux is Permissive — setting to Enforcing ..."
         setenforce 1
         sed -i 's/^SELINUX=.*/SELINUX=enforcing/' /etc/selinux/config
         log_success "SELinux set to Enforcing"
-    else
-        log_success "SELinux is already Enforcing"
+    elif [[ "$SELINUX_STATUS" == "Disabled" ]]; then
+        log_warn "SELinux is Disabled — cannot enable at runtime."
+        sed -i 's/^SELINUX=.*/SELINUX=enforcing/' /etc/selinux/config
+        log_warn "Set SELINUX=enforcing in /etc/selinux/config — will activate after reboot."
     fi
 else
     log_warn "getenforce not found — SELinux may not be installed"
