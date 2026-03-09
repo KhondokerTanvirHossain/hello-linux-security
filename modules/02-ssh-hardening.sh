@@ -16,6 +16,13 @@ log_info "Writing hardened SSH config to /etc/ssh/sshd_config.d/99-hardening.con
 
 mkdir -p /etc/ssh/sshd_config.d
 
+# Ensure sshd_config includes drop-in directory (AlmaLinux 8 doesn't by default)
+if ! grep -q 'Include /etc/ssh/sshd_config.d/\*.conf' /etc/ssh/sshd_config; then
+    log_info "Adding Include directive for drop-in configs ..."
+    echo 'Include /etc/ssh/sshd_config.d/*.conf' >> /etc/ssh/sshd_config
+    log_success "Include directive added to sshd_config"
+fi
+
 cat > /etc/ssh/sshd_config.d/99-hardening.conf <<EOF
 Port $SSH_PORT
 PermitRootLogin no
