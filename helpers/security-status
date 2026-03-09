@@ -1,0 +1,145 @@
+#!/bin/bash
+# security-status — Show overall security status of the hardened system
+# Usage: security-status
+# Installed to /usr/local/bin/ by harden.sh
+# Note: {{SSH_PORT}} is replaced by harden.sh during install with the actual SSH port.
+
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# Colors
+# ---------------------------------------------------------------------------
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# ---------------------------------------------------------------------------
+# SSH port — replaced by harden.sh during install (sed replaces {{SSH_PORT}})
+# ---------------------------------------------------------------------------
+SSH_PORT="{{SSH_PORT}}"
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+status_good() {
+    echo -e "  ${GREEN}[OK]${NC}    $1"
+}
+
+status_bad() {
+    echo -e "  ${RED}[FAIL]${NC}  $1"
+}
+
+status_warn() {
+    echo -e "  ${YELLOW}[WARN]${NC}  $1"
+}
+
+# ---------------------------------------------------------------------------
+# Header
+# ---------------------------------------------------------------------------
+echo ""
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  Security Status${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo ""
+
+# ---------------------------------------------------------------------------
+# SSH port
+# ---------------------------------------------------------------------------
+echo -e "${YELLOW}SSH Configuration:${NC}"
+if ss -tlnp 2>/dev/null | grep -q ":${SSH_PORT} "; then
+    status_good "SSH listening on port ${SSH_PORT}"
+else
+    status_bad "SSH is NOT listening on port ${SSH_PORT}"
+fi
+echo ""
+
+# ---------------------------------------------------------------------------
+# Open firewall ports
+# ---------------------------------------------------------------------------
+echo -e "${YELLOW}Firewall Ports:${NC}"
+PORTS=$(sudo firewall-cmd --list-ports 2>/dev/null || echo "")
+if [[ -n "$PORTS" ]]; then
+    for port in $PORTS; do
+        echo -e "  ${GREEN}*${NC} $port"
+    done
+else
+    status_warn "No open ports detected"
+fi
+echo ""
+
+# ---------------------------------------------------------------------------
+# Fail2Ban status
+# ---------------------------------------------------------------------------
+echo -e "${YELLOW}Fail2Ban:${NC}"
+if systemctl is-active fail2ban &>/dev/null; then
+    status_good "Fail2Ban is active"
+    JAILS=$(sudo fail2ban-client status 2>/dev/null | grep "Jail list" | sed 's/.*:\s*//' || echo "")
+    if [[ -n "$JAILS" ]]; then
+        echo -e "  ${GREEN}[OK]${NC}    Active jails: ${JAILS}"
+    fi
+else
+    status_bad "Fail2Ban is NOT running"
+fi
+echo ""
+
+# ---------------------------------------------------------------------------
+# SELinux status
+# ---------------------------------------------------------------------------
+echo -e "${YELLOW}SELinux:${NC}"
+SELINUX_STATUS=$(getenforce 2>/dev/null || echo "unknown")
+case "$SELINUX_STATUS" in
+    Enforcing)
+        status_good "SELinux is enforcing"
+        ;;
+    Permissive)
+        status_warn "SELinux is permissive (not enforcing)"
+        ;;
+    *)
+        status_bad "SELinux status: ${SELINUX_STATUS}"
+        ;;
+esac
+echo ""
+
+# ---------------------------------------------------------------------------
+# AIDE (file integrity)
+# ---------------------------------------------------------------------------
+echo -e "${YELLOW}AIDE (File Integrity):${NC}"
+if command -v aide &>/dev/null; then
+    AIDE_DB="/var/lib/aide/aide.db.gz"
+    if [[ -f "$AIDE_DB" ]]; then
+        AIDE_DATE=$(stat -c '%y' "$AIDE_DB" 2>/dev/null | cut -d' ' -f1 || echo "unknown")
+        status_good "AIDE database present (last updated: ${AIDE_DATE})"
+    else
+        status_warn "AIDE installed but no database found — run 'sudo aide --init'"
+    fi
+else
+    status_bad "AIDE is not installed"
+fi
+echo ""
+
+# ---------------------------------------------------------------------------
+# System uptime
+# ---------------------------------------------------------------------------
+echo -e "${YELLOW}System:${NC}"
+UPTIME=$(uptime -p 2>/dev/null || uptime | sed 's/.*up /up /' | sed 's/,.*load.*//')
+echo -e "  ${GREEN}[OK]${NC}    Uptime: ${UPTIME}"
+
+# ---------------------------------------------------------------------------
+# Pending updates
+# ---------------------------------------------------------------------------
+UPDATE_COUNT=$(dnf check-update --quiet 2>/dev/null | grep -c '^\S' || true)
+if (( UPDATE_COUNT == 0 )); then
+    status_good "System is up to date"
+else
+    status_warn "${UPDATE_COUNT} pending update(s) available"
+fi
+echo ""
+
+# ---------------------------------------------------------------------------
+# Footer
+# ---------------------------------------------------------------------------
+echo -e "${GREEN}========================================${NC}"
+echo -e "  Report generated: $(date '+%Y-%m-%d %H:%M:%S %Z')"
+echo -e "${GREEN}========================================${NC}"
+echo ""

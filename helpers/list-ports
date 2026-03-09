@@ -1,0 +1,62 @@
+#!/bin/bash
+# list-ports — List all open firewall ports and services
+# Usage: list-ports
+# Installed to /usr/local/bin/ by harden.sh
+
+set -euo pipefail
+
+# ---------------------------------------------------------------------------
+# Colors
+# ---------------------------------------------------------------------------
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+NC='\033[0m'
+
+# ---------------------------------------------------------------------------
+# Header
+# ---------------------------------------------------------------------------
+echo ""
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  Firewall Port Status${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo ""
+
+# ---------------------------------------------------------------------------
+# Open ports
+# ---------------------------------------------------------------------------
+echo -e "${YELLOW}Open ports:${NC}"
+PORTS=$(sudo firewall-cmd --list-ports 2>/dev/null || echo "")
+if [[ -n "$PORTS" ]]; then
+    for port in $PORTS; do
+        echo -e "  ${GREEN}*${NC} $port"
+    done
+else
+    echo -e "  ${RED}(none)${NC}"
+fi
+
+echo ""
+
+# ---------------------------------------------------------------------------
+# Active services
+# ---------------------------------------------------------------------------
+echo -e "${YELLOW}Active services:${NC}"
+SERVICES=$(sudo firewall-cmd --list-services 2>/dev/null || echo "")
+if [[ -n "$SERVICES" ]]; then
+    for svc in $SERVICES; do
+        echo -e "  ${GREEN}*${NC} $svc"
+    done
+else
+    echo -e "  ${RED}(none)${NC}"
+fi
+
+echo ""
+
+# ---------------------------------------------------------------------------
+# Active zone
+# ---------------------------------------------------------------------------
+echo -e "${YELLOW}Active zone:${NC}"
+ZONE=$(sudo firewall-cmd --get-active-zones 2>/dev/null || echo "(unable to determine)")
+echo "  $ZONE"
+
+echo ""
